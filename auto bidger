@@ -1,0 +1,83 @@
+// ===== AUTO BRIDGER v2 =====
+(function() {
+  let bridging = false;
+  let bridgeStyle = 'normal'; // normal | diagonal | ninja
+  let bridgeInterval = null;
+  let keys = {};
+
+  document.addEventListener('keydown', e => { keys[e.code] = true; });
+  document.addEventListener('keyup',   e => { keys[e.code] = false; });
+
+  function placeBlock() {
+    // ПКМ — поставити блок
+    const canvas = document.querySelector('canvas');
+    const target = canvas || document;
+    target.dispatchEvent(new MouseEvent('mousedown', { bubbles: true, button: 2, clientX: window.innerWidth/2, clientY: window.innerHeight/2 }));
+    setTimeout(() => {
+      target.dispatchEvent(new MouseEvent('mouseup', { bubbles: true, button: 2, clientX: window.innerWidth/2, clientY: window.innerHeight/2 }));
+    }, 50);
+  }
+
+  const styles = {
+    normal: {
+      desc: 'Звичайний — іди назад, блоки ставляться під тобою',
+      delay: 100,
+      place: () => {
+        if (keys['KeyS']) placeBlock();
+      }
+    },
+    diagonal: {
+      desc: 'Діагональний — WASD в будь-якому напрямку',
+      delay: 80,
+      place: () => {
+        if (keys['KeyS'] || keys['KeyA'] || keys['KeyD']) placeBlock();
+      }
+    },
+    ninja: {
+      desc: 'Ніндзя — дуже швидкий, кожні 60мс',
+      delay: 60,
+      place: () => {
+        if (keys['KeyS'] || keys['KeyA'] || keys['KeyD'] || keys['KeyW']) placeBlock();
+      }
+    }
+  };
+
+  function startBridge() {
+    if (bridgeInterval) clearInterval(bridgeInterval);
+    const style = styles[bridgeStyle];
+    bridgeInterval = setInterval(() => {
+      if (!bridging) return;
+      style.place();
+    }, style.delay);
+  }
+
+  document.addEventListener('keydown', e => {
+    // B — вмик/вимк
+    if (e.code === 'KeyB') {
+      bridging = !bridging;
+      if (bridging) startBridge();
+      else clearInterval(bridgeInterval);
+      console.log(`%c🧱 Бриджинг [${bridgeStyle}]: ${bridging ? 'ON 🟢' : 'OFF 🔴'}`,
+        `color:${bridging ? 'lime' : 'red'}; font-size:14px; font-weight:bold;`);
+    }
+
+    // 1/2/3 — вибір стилю
+    if (e.code === 'Digit1') { bridgeStyle = 'normal';   if (bridging) startBridge(); console.log('%c🧱 Стиль: NORMAL',   'color:cyan; font-size:13px;'); }
+    if (e.code === 'Digit2') { bridgeStyle = 'diagonal'; if (bridging) startBridge(); console.log('%c🧱 Стиль: DIAGONAL', 'color:cyan; font-size:13px;'); }
+    if (e.code === 'Digit3') { bridgeStyle = 'ninja';    if (bridging) startBridge(); console.log('%c🧱 Стиль: NINJA',    'color:cyan; font-size:13px;'); }
+  });
+
+  console.log(`%c
+  ╔════════════════════════════════╗
+  ║     🧱 AUTO BRIDGER v2 🧱     ║
+  ╠════════════════════════════════╣
+  ║  B       → Бриджинг ON/OFF    ║
+  ╠════════════════════════════════╣
+  ║  1 → Normal   (іди назад S)   ║
+  ║  2 → Diagonal (S + A або D)   ║
+  ║  3 → Ninja    (будь-який рух) ║
+  ╚════════════════════════════════╝
+  `, 'color:cyan; background:#111; font-size:12px; padding:8px; border-radius:6px;');
+
+  console.log('%cЗа замовчуванням: Normal. Нажми 1/2/3 щоб змінити стиль.', 'color:yellow; font-size:12px;');
+})();
