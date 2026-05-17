@@ -1,0 +1,79 @@
+// ===== BLOXD.IO MINI CLIENT =====
+(function() {
+  let flying = false, clicking = false;
+  let flySpeed = 0.3, cps = 15;
+  let keys = {}, clickInterval = null;
+
+  document.addEventListener('keydown', e => { keys[e.code] = true; });
+  document.addEventListener('keyup',   e => { keys[e.code] = false; });
+
+  // --- PLAYER ---
+  function findPlayer() {
+    if (window.game?.player) return window.game.player;
+    if (window._game?.player) return window._game.player;
+    if (window.BABYLON) {
+      const scene = window.BABYLON.Engine.LastCreatedScene;
+      if (scene) for (const m of scene.meshes)
+        if (m.name === 'player' || m.name === 'localPlayer') return m;
+    }
+    return null;
+  }
+
+  // --- FLY LOOP ---
+  setInterval(() => {
+    if (!flying) return;
+    const p = findPlayer();
+    if (!p) return;
+    if (keys['Space'] || keys['KeyE']) { if (p.position) p.position.y += flySpeed; }
+    if (keys['ShiftLeft'] || keys['KeyQ']) { if (p.position) p.position.y -= flySpeed; }
+    if (p.velocity) p.velocity.y *= 0.5;
+    if (p.isOnGround !== undefined) p.isOnGround = true;
+  }, 16);
+
+  // --- AUTOCLICKER ---
+  function startClick() {
+    clickInterval = setInterval(() => {
+      document.dispatchEvent(new MouseEvent('mousedown', { bubbles: true, button: 0 }));
+      document.dispatchEvent(new MouseEvent('mouseup',   { bubbles: true, button: 0 }));
+      document.dispatchEvent(new MouseEvent('click',     { bubbles: true, button: 0 }));
+    }, 1000 / cps);
+  }
+
+  // --- KEYBINDS ---
+  document.addEventListener('keydown', e => {
+    // Політ
+    if (e.code === 'KeyF') {
+      flying = !flying;
+      log(`✈ Політ: ${flying ? 'ON' : 'OFF'}`, flying ? 'lime' : 'red');
+    }
+    if (e.code === 'Equal')  { flySpeed = +(flySpeed + 0.1).toFixed(1); log('Швидкість: ' + flySpeed, 'cyan'); }
+    if (e.code === 'Minus')  { flySpeed = +Math.max(0.05, flySpeed - 0.1).toFixed(1); log('Швидкість: ' + flySpeed, 'cyan'); }
+
+    // Автоклікер
+    if (e.code === 'KeyZ') {
+      clicking = !clicking;
+      if (clicking) { startClick(); log(`🖱 Клікер: ON (${cps} CPS)`, 'lime'); }
+      else { clearInterval(clickInterval); log('🖱 Клікер: OFF', 'red'); }
+    }
+    if (e.code === 'BracketLeft')  { cps = Math.max(1, cps - 1); if (clicking) { clearInterval(clickInterval); startClick(); } log('CPS: ' + cps, 'cyan'); }
+    if (e.code === 'BracketRight') { cps = Math.min(50, cps + 1); if (clicking) { clearInterval(clickInterval); startClick(); } log('CPS: ' + cps, 'cyan'); }
+  });
+
+  function log(msg, color = 'white') {
+    console.log(`%c${msg}`, `color:${color}; font-size:14px; font-weight:bold;`);
+  }
+
+  console.log(`%c
+  ╔══════════════════════════╗
+  ║   🎮 MINI CLIENT v1.0   ║
+  ╠══════════════════════════╣
+  ║  F        → Політ ON/OFF ║
+  ║  Пробіл/E → Вгору        ║
+  ║  Shift/Q  → Вниз         ║
+  ║  + / -    → Швидкість    ║
+  ╠══════════════════════════╣
+  ║  Z        → Клікер ON/OFF║
+  ║  [ / ]    → CPS ±1       ║
+  ╚══════════════════════════╝
+  `, 'color:cyan; background:#111; font-size:12px; padding:8px; border-radius:6px;');
+})();
